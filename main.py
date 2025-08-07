@@ -19,4 +19,4 @@ def convert(request: ConversionRequest, status_code=status.HTTP_204_NO_CONTENT):
         text=request.text,
         file_path=f"out/{request.fileName}.wav"
     )
-    return
+    return {}
