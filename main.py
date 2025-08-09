@@ -2,6 +2,7 @@
 from TTS.api import TTS
 from fastapi import FastAPI, status
 from pydantic import BaseModel
+from starlette.responses import JSONResponse
 
 class ConversionRequest(BaseModel):
     text: str
@@ -19,4 +20,8 @@ def convert(request: ConversionRequest, status_code=status.HTTP_204_NO_CONTENT):
         text=request.text,
         file_path=f"out/{request.fileName}.wav"
     )
-    return {}
+    return JSONResponse(content={})
+
+@app.get("/healthcheck")
+def healthcheck(status_code=status.HTTP_200_OK):
+    return JSONResponse(content={})

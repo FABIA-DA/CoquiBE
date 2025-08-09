@@ -1,17 +1,34 @@
-﻿FROM continuumio/miniconda3@sha256:4a2425c3ca891633e5a27280120f3fb6d5960a0f509b7594632cdd5bb8cbaea8
+﻿FROM mambaorg/micromamba@sha256:5e3b9c781f71c5d715a18216cdc9ce778bc974f478c6757a6e853a11d05fad12
 
 WORKDIR /app
 
-# Create environment
+RUN mkdir out
+
+# Copy envornment file
+COPY environment.yml .
+
+USER root
+# Install OS dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends espeak \
+ && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /env && chown $MAMBA_USER /env
+USER $MAMBA_USER
+
+# Create Conda environment with only conda packages
+RUN micromamba env create --copy -p /env --file environment.yml && \
+    micromamba clean --all --yes
+
+# Make the dependencies accessible
+ENV PATH=/env/bin:$PATH
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+
+# Copy the rest of the app
 COPY . .
-RUN conda env create -f environment.yml
-
-# Set the environment as the default
-RUN echo "conda activate coqui-be-env" > ~/.bashrc
-ENV PATH=/opt/conda/envs/coqui-be-env/bin:$PATH
-
-RUN apt-get install espeak-ng
 
 EXPOSE 8000
 
-CMD ["fastapi", "run", "app/main.py", "--port", "8000"]
+# Download the model into the image
+RUN python -c "from TTS.utils.manage import ModelManager; ModelManager().download_model('tts_models/de/css10/vits-neon')"
+
+# Run the app
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
