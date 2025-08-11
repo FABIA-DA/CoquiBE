@@ -2,8 +2,6 @@
 
 WORKDIR /app
 
-RUN mkdir out
-
 # Copy envornment file
 COPY environment.yml .
 
@@ -23,7 +21,7 @@ ENV PATH=/env/bin:$PATH
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
 # Copy the rest of the app
-COPY . .
+COPY --chmod=777 . .
 
 EXPOSE 8000
 
