@@ -2,6 +2,8 @@
 
 WORKDIR /app
 
+RUN mkdir -p /app/out
+
 # Copy envornment file
 COPY environment.yml .
 

@@ -2,9 +2,8 @@
 
 import torch
 from TTS.api import TTS
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Response, status
 from pydantic import BaseModel
-from starlette.responses import JSONResponse
 from pydub import AudioSegment
 
 
@@ -12,8 +11,8 @@ class ConversionRequest(BaseModel):
     text: str
     fileName: str
 
-
-os.makedirs("./out", exist_ok=True)
+output_dir = "/app/out"
+os.makedirs(output_dir, exist_ok=True)
 
 app = FastAPI()
 
@@ -22,9 +21,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 tts = TTS("tts_models/de/css10/vits-neon").to(device)
 
 
-@app.post("/convert")
-def convert(request: ConversionRequest, status_code=status.HTTP_204_NO_CONTENT):
-    audio_path = f"./out/{request.fileName}.wav"
+@app.post("/convert", status_code=status.HTTP_204_NO_CONTENT)
+async def convert(request: ConversionRequest):
+    audio_path = f"{output_dir}/{request.fileName}.wav"
     tts.tts_to_file(
         text=request.text,
         file_path=audio_path,
@@ -34,9 +33,9 @@ def convert(request: ConversionRequest, status_code=status.HTTP_204_NO_CONTENT):
     sound = sound.set_frame_rate(8000)
     sound.export(audio_path, format="wav")
 
-    return JSONResponse(content={})
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.get("/healthcheck")
-def healthcheck(status_code=status.HTTP_200_OK):
-    return JSONResponse(content={})
+@app.get("/healthcheck", status_code=status.HTTP_200_OK)
+async def healthcheck():
+    return Response(status_code=status.HTTP_200_OK)
