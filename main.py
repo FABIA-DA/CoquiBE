@@ -4,12 +4,15 @@ import torch
 from TTS.api import TTS
 from fastapi import FastAPI, Response, status
 from pydantic import BaseModel
+from pydub.utils import which
 from pydub import AudioSegment
-
 
 class ConversionRequest(BaseModel):
     text: str
     fileName: str
+
+# Force Pydub to use Conda-installed FFmpeg
+AudioSegment.converter = which("ffmpeg")
 
 output_dir = "/app/out"
 os.makedirs(output_dir, exist_ok=True)
@@ -30,8 +33,8 @@ async def convert(request: ConversionRequest):
     )
 
     sound = AudioSegment.from_file(audio_path)
-    sound = sound.set_frame_rate(8000)
-    sound.export(audio_path, format="wav")
+    sound = sound.set_channels(1).set_frame_rate(8000)
+    sound.export(audio_path, format="wav", parameters=["-c:a", "pcm_s16le"])
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

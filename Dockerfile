@@ -2,8 +2,6 @@
 
 WORKDIR /app
 
-RUN mkdir -p /app/out
-
 # Copy envornment file
 COPY environment.yml .
 
@@ -15,8 +13,9 @@ RUN mkdir -p /env && chown $MAMBA_USER /env
 USER $MAMBA_USER
 
 # Create Conda environment with only conda packages
-RUN micromamba env create --copy -p /env --file environment.yml && \
-    micromamba clean --all --yes
+RUN micromamba env create --copy -p /env --file environment.yml
+RUN micromamba install -y -p /env -c conda-forge ffmpeg libopus lame \
+    && micromamba clean --all --yes
 
 # Make the dependencies accessible
 ENV PATH=/env/bin:$PATH
@@ -28,7 +27,8 @@ COPY --chmod=777 . .
 EXPOSE 8000
 
 # Download the model into the image
-RUN python -c "from TTS.utils.manage import ModelManager; ModelManager().download_model('tts_models/de/css10/vits-neon')"
+RUN micromamba run -p /env python -c "from TTS.utils.manage import ModelManager; ModelManager().download_model('tts_models/de/css10/vits-neon')"
 
+USER root
 # Run the app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
